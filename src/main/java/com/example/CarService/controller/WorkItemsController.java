@@ -33,4 +33,11 @@ public class WorkItemsController {
     public ResponseEntity<List<WorkItemResponse>> getWorkItemsForOrder(@PathVariable Long orderId) {
         return ResponseEntity.ok(workItemService.getWorkItemsForOrder(orderId));
     }
+
+
+    @DeleteMapping("/work-items/{id}")
+    public ResponseEntity<Void> deleteWorkItem(@PathVariable Long id) {
+        workItemService.deleteWorkItem(id);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -20,4 +20,10 @@ public class PartController {
         return ResponseEntity.status(201).body(partService.addPart(orderId,request));
 
     }
+
+    @DeleteMapping("/parts/{id}")
+    public ResponseEntity<Void> deletePart(@PathVariable Long id) {
+        partService.deletePart(id);
+        return ResponseEntity.noContent().build();
+    }
 }

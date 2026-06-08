@@ -9,6 +9,8 @@ import com.example.CarService.repository.PartRepository;
 import com.example.CarService.repository.ServiceOrderRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 public class PartService {
 
@@ -41,5 +43,13 @@ public class PartService {
         return response;
 
 
+    }
+
+    public void deletePart(Long id) {
+        Part part = partRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Part not found"));
+
+        part.setDeletedAt(LocalDateTime.now());
+        partRepository.save(part);
     }
 }

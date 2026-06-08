@@ -10,6 +10,7 @@ import com.example.CarService.repository.ServiceOrderRepository;
 import com.example.CarService.repository.WorkItemRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,5 +85,13 @@ public class WorkItemService {
         }
 
         return responses;
+    }
+
+    public void deleteWorkItem(Long id) {
+        WorkItem workItem = workItemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Work item not found"));
+
+        workItem.setDeletedAt(LocalDateTime.now());
+        workItemRepository.save(workItem);
     }
 }
