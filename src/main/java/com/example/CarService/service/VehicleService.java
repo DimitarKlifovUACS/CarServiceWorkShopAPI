@@ -55,6 +55,10 @@ public class VehicleService {
             response.setYear(vehicle.getYear());
             response.setOwnerName(vehicle.getOwnerName());
 
+            if(vehicle.getYear() < 2020){
+                response.setOld(true);
+            }
+
             responses.add(response);
         }
 
