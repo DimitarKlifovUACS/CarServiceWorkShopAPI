@@ -6,8 +6,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ServiceOrderRepository extends JpaRepository<ServiceOrder,Long> {
+    // Like findById, but ignores soft-deleted records (deletedAt is set)
+    Optional<ServiceOrder> findByIdAndDeletedAtIsNull(Long id);
     List<ServiceOrder> findAllByDeletedAtIsNull();
     List<ServiceOrder> findAllByVehicleIdAndDeletedAtIsNull(Long vehicleId);
 

@@ -73,7 +73,7 @@ public class VehicleService {
 
 
     public void deleteVehicle(Long id){
-        Vehicle vehicle = vehicleRepository.findById(id)
+        Vehicle vehicle = vehicleRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Vehicle not found"));
 
         vehicle.setDeletedAt(LocalDateTime.now());

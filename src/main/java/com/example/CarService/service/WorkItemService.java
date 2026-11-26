@@ -27,7 +27,7 @@ public class WorkItemService {
     }
 
     public WorkItemResponse addWorkItem(Long orderId, WorkItemRequest request){
-        ServiceOrder order = serviceOrderRepository.findById(orderId)
+        ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(orderId)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
 
         WorkItem workItem = new WorkItem();
@@ -52,7 +52,7 @@ public class WorkItemService {
     }
 
     public WorkItemResponse finishWorkItem(Long id){
-        WorkItem workItem = workItemRepository.findById(id)
+        WorkItem workItem = workItemRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()->new ResourceNotFoundException("Work item not found"));
 
         workItem.setStatus("DONE");
@@ -70,6 +70,9 @@ public class WorkItemService {
     }
 
     public List<WorkItemResponse> getWorkItemsForOrder(Long orderId) {
+        // A deleted (or unknown) order has no visible work items: 404 instead of listing them
+        serviceOrderRepository.findByIdAndDeletedAtIsNull(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         List<WorkItem> workItems = workItemRepository.findAllByOrderIdAndDeletedAtIsNull(orderId);
         List<WorkItemResponse> responses = new ArrayList<>();
 
@@ -88,7 +91,7 @@ public class WorkItemService {
     }
 
     public void deleteWorkItem(Long id) {
-        WorkItem workItem = workItemRepository.findById(id)
+        WorkItem workItem = workItemRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Work item not found"));
 
         workItem.setDeletedAt(LocalDateTime.now());

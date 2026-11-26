@@ -23,7 +23,7 @@ public class PartService {
     }
 
     public PartResponse addPart(Long orderId, PartRequest request){
-        ServiceOrder order = serviceOrderRepository.findById(orderId)
+        ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(orderId)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
 
         Part part = new Part();
@@ -46,7 +46,7 @@ public class PartService {
     }
 
     public void deletePart(Long id) {
-        Part part = partRepository.findById(id)
+        Part part = partRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Part not found"));
 
         part.setDeletedAt(LocalDateTime.now());

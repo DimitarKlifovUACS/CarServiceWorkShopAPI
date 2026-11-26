@@ -27,7 +27,7 @@ public class ServiceOrderService {
     }
 
     public ServiceOrderResponse createOrder(Long vehicleId){
-        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+        Vehicle vehicle = vehicleRepository.findByIdAndDeletedAtIsNull(vehicleId)
                 .orElseThrow(()-> new ResourceNotFoundException("Vehicle not found"));
 
         ServiceOrder order = new ServiceOrder();
@@ -48,7 +48,7 @@ public class ServiceOrderService {
 
 
     public ServiceOrderResponse getOrderById(Long id){
-        ServiceOrder order = serviceOrderRepository.findById(id)
+        ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
 
         ServiceOrderResponse response = new ServiceOrderResponse();
@@ -62,7 +62,7 @@ public class ServiceOrderService {
 
     @Transactional
     public ServiceOrderResponse completeOrder(Long id){
-        ServiceOrder order = serviceOrderRepository.findById(id)
+        ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
 
         boolean hasInProgress = order.getWorkItems()
@@ -89,6 +89,10 @@ public class ServiceOrderService {
     }
 
     public List<ServiceOrderResponse> getOrdersByVehicle(Long vehicleId) {
+        // A deleted (or unknown) vehicle has no visible orders: 404 instead of listing them
+        vehicleRepository.findByIdAndDeletedAtIsNull(vehicleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
+
         List<ServiceOrder> orders = serviceOrderRepository.findAllByVehicleIdAndDeletedAtIsNull(vehicleId);
         List<ServiceOrderResponse> responses = new ArrayList<>();
 
@@ -106,7 +110,7 @@ public class ServiceOrderService {
     }
 
     public void deleteOrder(Long id) {
-        ServiceOrder order = serviceOrderRepository.findById(id)
+        ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         order.setDeletedAt(LocalDateTime.now());
