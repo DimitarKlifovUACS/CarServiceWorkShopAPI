@@ -28,6 +28,11 @@ import java.time.LocalDateTime;
         @Override
         public void run(String... args) {
 
+            // The database is persistent now (PostgreSQL), so only seed demo data once, into an empty database
+            if (vehicleRepository.count() > 0) {
+                return;
+            }
+
             // ── Vehicles ──────────────────────────────────────────────
             Vehicle v1 = new Vehicle();
             v1.setLicensePlate("ABC-123");
