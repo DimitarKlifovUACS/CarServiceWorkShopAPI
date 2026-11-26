@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -22,15 +23,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class ErrorResponseTests {
 
-    private static final String KEY_HEADER = "X-API-Key";
-    private static final String KEY = "test-key";
-
     @Autowired
     private MockMvc mockMvc;
 
     @Test
     void validationErrorListsEveryInvalidField() throws Exception {
-        mockMvc.perform(post("/vehicles").header(KEY_HEADER, KEY)
+        mockMvc.perform(post("/vehicles").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -46,7 +44,7 @@ class ErrorResponseTests {
 
     @Test
     void missingOrderReturns404() throws Exception {
-        mockMvc.perform(get("/orders/999999").header(KEY_HEADER, KEY))
+        mockMvc.perform(get("/orders/999999").with(jwt()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.detail").value("Order not found"))
@@ -55,7 +53,7 @@ class ErrorResponseTests {
 
     @Test
     void completingOrderWithWorkInProgressReturns409() throws Exception {
-        mockMvc.perform(patch("/orders/4/complete").header(KEY_HEADER, KEY))
+        mockMvc.perform(patch("/orders/4/complete").with(jwt()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.detail").value("Cannot complete order while work items are not done"));
@@ -66,7 +64,7 @@ class ErrorResponseTests {
         String body = """
                 {"licensePlate":"ABC-123","ownerName":"Test Owner","make":"BMW","model":"320i","year":2020}
                 """;
-        mockMvc.perform(post("/vehicles").header(KEY_HEADER, KEY)
+        mockMvc.perform(post("/vehicles").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isConflict())
@@ -75,7 +73,7 @@ class ErrorResponseTests {
 
     @Test
     void malformedJsonReturns400() throws Exception {
-        mockMvc.perform(post("/vehicles").header(KEY_HEADER, KEY)
+        mockMvc.perform(post("/vehicles").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ not json"))
                 .andExpect(status().isBadRequest())
@@ -84,14 +82,14 @@ class ErrorResponseTests {
 
     @Test
     void textInsteadOfIdReturns400() throws Exception {
-        mockMvc.perform(get("/orders/abc").header(KEY_HEADER, KEY))
+        mockMvc.perform(get("/orders/abc").with(jwt()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test
     void unknownUrlReturns404NotServerError() throws Exception {
-        mockMvc.perform(get("/does-not-exist").header(KEY_HEADER, KEY))
+        mockMvc.perform(get("/does-not-exist").with(jwt()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }

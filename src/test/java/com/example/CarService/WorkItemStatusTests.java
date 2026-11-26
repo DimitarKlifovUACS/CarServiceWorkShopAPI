@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,9 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class WorkItemStatusTests {
 
-    private static final String KEY_HEADER = "X-API-Key";
-    private static final String KEY = "test-key";
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -37,7 +35,7 @@ class WorkItemStatusTests {
     @Test
     void newWorkItemStartsAsTodo() throws Exception {
         long orderId = createOrder();
-        mockMvc.perform(post("/orders/" + orderId + "/work-items").header(KEY_HEADER, KEY)
+        mockMvc.perform(post("/orders/" + orderId + "/work-items").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"description\":\"Tyre swap\",\"estimatedHours\":1,\"mechanicName\":\"Stefan\"}"))
                 .andExpect(status().isCreated())
@@ -59,7 +57,7 @@ class WorkItemStatusTests {
         long itemId = createWorkItem(createOrder());
 
         changeStatus(itemId, "FLYING").andExpect(status().isBadRequest());
-        mockMvc.perform(patch("/work-items/" + itemId + "/status").header(KEY_HEADER, KEY)
+        mockMvc.perform(patch("/work-items/" + itemId + "/status").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.status").exists());
@@ -71,15 +69,15 @@ class WorkItemStatusTests {
         long orderId = createOrder();
         long itemId = createWorkItem(orderId); // TODO
 
-        mockMvc.perform(patch("/orders/" + orderId + "/complete").header(KEY_HEADER, KEY))
+        mockMvc.perform(patch("/orders/" + orderId + "/complete").with(jwt()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Cannot complete order while work items are not done"));
 
         changeStatus(itemId, "IN_PROGRESS");
-        mockMvc.perform(patch("/orders/" + orderId + "/complete").header(KEY_HEADER, KEY)).andExpect(status().isConflict());
+        mockMvc.perform(patch("/orders/" + orderId + "/complete").with(jwt())).andExpect(status().isConflict());
 
         changeStatus(itemId, "DONE");
-        mockMvc.perform(patch("/orders/" + orderId + "/complete").header(KEY_HEADER, KEY)).andExpect(status().isOk());
+        mockMvc.perform(patch("/orders/" + orderId + "/complete").with(jwt())).andExpect(status().isOk());
 
         // the order is now locked
         changeStatus(itemId, "TODO").andExpect(status().isConflict());
@@ -92,12 +90,12 @@ class WorkItemStatusTests {
         long openOrder = createOrder(vehicleId);
         long openItem = createWorkItem(openOrder);
         long deletedItem = createWorkItem(openOrder);
-        mockMvc.perform(delete("/work-items/" + deletedItem).header(KEY_HEADER, KEY)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/work-items/" + deletedItem).with(jwt())).andExpect(status().isNoContent());
 
         long completedOrder = createOrder(vehicleId);
         long completedItem = createWorkItem(completedOrder);
         changeStatus(completedItem, "DONE");
-        mockMvc.perform(patch("/orders/" + completedOrder + "/complete").header(KEY_HEADER, KEY)).andExpect(status().isOk());
+        mockMvc.perform(patch("/orders/" + completedOrder + "/complete").with(jwt())).andExpect(status().isOk());
 
         JsonNode board = getJson("/work-items?orderStatus=open");
         assertThat(ids(board)).contains(openItem).doesNotContain(deletedItem, completedItem);
@@ -111,19 +109,19 @@ class WorkItemStatusTests {
         // without a filter, items of completed orders are included too
         assertThat(ids(getJson("/work-items"))).contains(openItem, completedItem);
 
-        mockMvc.perform(get("/work-items?orderStatus=WRONG").header(KEY_HEADER, KEY)).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/work-items?orderStatus=WRONG").with(jwt())).andExpect(status().isBadRequest());
     }
 
     // ---- helpers ----
 
     private ResultActions changeStatus(long itemId, String status) throws Exception {
-        return mockMvc.perform(patch("/work-items/" + itemId + "/status").header(KEY_HEADER, KEY)
+        return mockMvc.perform(patch("/work-items/" + itemId + "/status").with(jwt())
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"" + status + "\"}"));
     }
 
     private long createVehicle(String plate) throws Exception {
         String body = "{\"licensePlate\":\"" + plate + "\",\"ownerName\":\"Test Owner\",\"make\":\"Kia\",\"model\":\"Ceed\",\"year\":2022}";
-        return idOf(mockMvc.perform(post("/vehicles").header(KEY_HEADER, KEY).contentType(MediaType.APPLICATION_JSON).content(body))
+        return idOf(mockMvc.perform(post("/vehicles").with(jwt()).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
     }
 
@@ -132,19 +130,19 @@ class WorkItemStatusTests {
     }
 
     private long createOrder(long vehicleId) throws Exception {
-        return idOf(mockMvc.perform(post("/vehicles/" + vehicleId + "/orders").header(KEY_HEADER, KEY))
+        return idOf(mockMvc.perform(post("/vehicles/" + vehicleId + "/orders").with(jwt()))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
     }
 
     private long createWorkItem(long orderId) throws Exception {
-        return idOf(mockMvc.perform(post("/orders/" + orderId + "/work-items").header(KEY_HEADER, KEY)
+        return idOf(mockMvc.perform(post("/orders/" + orderId + "/work-items").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"description\":\"Inspection\",\"estimatedHours\":2,\"mechanicName\":\"Bogdan\"}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
     }
 
     private JsonNode getJson(String url) throws Exception {
-        return objectMapper.readTree(mockMvc.perform(get(url).header(KEY_HEADER, KEY))
+        return objectMapper.readTree(mockMvc.perform(get(url).with(jwt()))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
     }
 

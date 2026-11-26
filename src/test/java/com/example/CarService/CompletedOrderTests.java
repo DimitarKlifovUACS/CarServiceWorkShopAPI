@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -26,9 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class CompletedOrderTests {
 
-    private static final String KEY_HEADER = "X-API-Key";
-    private static final String KEY = "test-key";
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -43,34 +41,34 @@ class CompletedOrderTests {
     void createCompletedOrder() throws Exception {
         String vehicle = "{\"licensePlate\":\"C-" + UUID.randomUUID().toString().substring(0, 8)
                 + "\",\"ownerName\":\"Test Owner\",\"make\":\"Skoda\",\"model\":\"Octavia\",\"year\":2022}";
-        long vehicleId = idOf(mockMvc.perform(post("/vehicles").header(KEY_HEADER, KEY)
+        long vehicleId = idOf(mockMvc.perform(post("/vehicles").with(jwt())
                 .contentType(MediaType.APPLICATION_JSON).content(vehicle)).andReturn().getResponse().getContentAsString());
-        orderId = idOf(mockMvc.perform(post("/vehicles/" + vehicleId + "/orders").header(KEY_HEADER, KEY))
+        orderId = idOf(mockMvc.perform(post("/vehicles/" + vehicleId + "/orders").with(jwt()))
                 .andReturn().getResponse().getContentAsString());
 
-        workItemId = idOf(mockMvc.perform(post("/orders/" + orderId + "/work-items").header(KEY_HEADER, KEY)
+        workItemId = idOf(mockMvc.perform(post("/orders/" + orderId + "/work-items").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"description\":\"Brake check\",\"estimatedHours\":1,\"mechanicName\":\"Bogdan\"}"))
                 .andReturn().getResponse().getContentAsString());
-        partId = idOf(mockMvc.perform(post("/orders/" + orderId + "/parts").header(KEY_HEADER, KEY)
+        partId = idOf(mockMvc.perform(post("/orders/" + orderId + "/parts").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Brake fluid\",\"quantity\":1,\"unitPrice\":20}"))
                 .andReturn().getResponse().getContentAsString());
 
-        mockMvc.perform(patch("/work-items/" + workItemId + "/finish").header(KEY_HEADER, KEY)).andExpect(status().isOk());
-        mockMvc.perform(patch("/orders/" + orderId + "/complete").header(KEY_HEADER, KEY)).andExpect(status().isOk());
+        mockMvc.perform(patch("/work-items/" + workItemId + "/finish").with(jwt())).andExpect(status().isOk());
+        mockMvc.perform(patch("/orders/" + orderId + "/complete").with(jwt())).andExpect(status().isOk());
     }
 
     @Test
     void cannotCompleteTwice() throws Exception {
-        mockMvc.perform(patch("/orders/" + orderId + "/complete").header(KEY_HEADER, KEY))
+        mockMvc.perform(patch("/orders/" + orderId + "/complete").with(jwt()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Order is already completed"));
     }
 
     @Test
     void cannotAddWorkItem() throws Exception {
-        mockMvc.perform(post("/orders/" + orderId + "/work-items").header(KEY_HEADER, KEY)
+        mockMvc.perform(post("/orders/" + orderId + "/work-items").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"description\":\"Late extra\",\"estimatedHours\":1,\"mechanicName\":\"Stefan\"}"))
                 .andExpect(status().isConflict())
@@ -79,31 +77,31 @@ class CompletedOrderTests {
 
     @Test
     void cannotChangeOrDeleteWorkItem() throws Exception {
-        mockMvc.perform(patch("/work-items/" + workItemId + "/finish").header(KEY_HEADER, KEY))
+        mockMvc.perform(patch("/work-items/" + workItemId + "/finish").with(jwt()))
                 .andExpect(status().isConflict());
-        mockMvc.perform(delete("/work-items/" + workItemId).header(KEY_HEADER, KEY))
+        mockMvc.perform(delete("/work-items/" + workItemId).with(jwt()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Cannot delete work items of a completed order"));
     }
 
     @Test
     void cannotAddOrDeletePart() throws Exception {
-        mockMvc.perform(post("/orders/" + orderId + "/parts").header(KEY_HEADER, KEY)
+        mockMvc.perform(post("/orders/" + orderId + "/parts").with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Wiper\",\"quantity\":1,\"unitPrice\":15}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Cannot add parts to a completed order"));
-        mockMvc.perform(delete("/parts/" + partId).header(KEY_HEADER, KEY))
+        mockMvc.perform(delete("/parts/" + partId).with(jwt()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Cannot delete parts of a completed order"));
     }
 
     @Test
     void completedOrderStaysReadable() throws Exception {
-        mockMvc.perform(get("/orders/" + orderId).header(KEY_HEADER, KEY))
+        mockMvc.perform(get("/orders/" + orderId).with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
-        mockMvc.perform(get("/orders/" + orderId + "/work-items").header(KEY_HEADER, KEY))
+        mockMvc.perform(get("/orders/" + orderId + "/work-items").with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("DONE"));
     }
