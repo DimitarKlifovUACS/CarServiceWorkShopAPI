@@ -86,9 +86,11 @@ Validation errors (400) also list every invalid field:
 | GET | `/orders/{id}` | One order (includes `vehicleId` and `licensePlate`) |
 | PATCH | `/orders/{id}/complete` | Complete an order (see business rules) |
 | DELETE | `/orders/{id}` | Delete an order (soft delete) |
+| GET | `/work-items?orderStatus=OPEN` | Work items across all orders, for the workshop board; each includes `orderId` and `licensePlate`. `orderStatus` (OPEN or COMPLETED) is optional |
 | GET | `/orders/{orderId}/work-items` | Work items of an order |
 | POST | `/orders/{orderId}/work-items` | Add a work item |
-| PATCH | `/work-items/{id}/finish` | Mark a work item as DONE |
+| PATCH | `/work-items/{id}/status` | Move a work item to another status. Body: `{"status": "TODO" \| "IN_PROGRESS" \| "DONE"}` |
+| PATCH | `/work-items/{id}/finish` | Shortcut: mark a work item as DONE |
 | DELETE | `/work-items/{id}` | Delete a work item (soft delete) |
 | GET | `/orders/{orderId}/parts` | Parts of an order |
 | POST | `/orders/{orderId}/parts` | Add a part |
@@ -99,7 +101,7 @@ Validation errors (400) also list every invalid field:
 
 All violations return 409 Conflict.
 
-1. **Completion rule:** a service order cannot be marked COMPLETED while any of its (non-deleted) work items is still IN_PROGRESS. All work must be finished before closing. This is enforced in the service layer inside a `@Transactional` method that checks all work items before allowing the status change.
+1. **Completion rule:** a service order cannot be marked COMPLETED while any of its (non-deleted) work items is not DONE (work items move TODO → IN_PROGRESS → DONE, and new ones start as TODO). All work must be finished before closing. This is enforced in the service layer inside a `@Transactional` method that checks all work items before allowing the status change.
 2. **Completed orders are locked:** once an order is COMPLETED, its work items and parts can no longer be added, finished or deleted, and the order cannot be completed again. This keeps the invoice and the revenue report final. A completed order can still be read, and deleted as a whole.
 3. **Unique license plates:** two active vehicles cannot share a license plate. The plate of a deleted vehicle can be used again.
 
