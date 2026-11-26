@@ -27,8 +27,7 @@ public class ApiKeyFilter implements Filter {
         String path = httpRequest.getRequestURI();
 
         if (path.startsWith("/swagger-ui") ||
-                path.startsWith("/v3") ||
-                path.startsWith("/h2-console")) {
+                path.startsWith("/v3")) {
             chain.doFilter(request, response);
             return;
         }

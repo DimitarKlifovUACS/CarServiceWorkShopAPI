@@ -1,0 +1,17 @@
+# Local PostgreSQL for development: docker compose up -d
+# These credentials are for local development only. Production uses environment variables.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: carservice
+      POSTGRES_USER: carservice
+      POSTGRES_PASSWORD: carservice
+    ports:
+      # 5433 on the host, because a locally installed PostgreSQL may already use 5432
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
