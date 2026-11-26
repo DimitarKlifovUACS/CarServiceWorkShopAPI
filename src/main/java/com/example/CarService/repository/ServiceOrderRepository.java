@@ -21,6 +21,7 @@ public interface ServiceOrderRepository extends JpaRepository<ServiceOrder,Long>
     @Query("SELECT MONTH(o.completedAt), YEAR(o.completedAt), SUM(p.quantity * p.unitPrice) " +
             "FROM ServiceOrder o JOIN Part p ON p.order = o " +
             "WHERE o.status = 'COMPLETED' AND o.deletedAt IS NULL AND p.deletedAt IS NULL " +
-            "GROUP BY YEAR(o.completedAt), MONTH(o.completedAt)")
+            "GROUP BY YEAR(o.completedAt), MONTH(o.completedAt) " +
+            "ORDER BY YEAR(o.completedAt), MONTH(o.completedAt)")
     List<Object[]> revenueByMonth();
 }
