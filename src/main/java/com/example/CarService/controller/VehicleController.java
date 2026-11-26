@@ -1,14 +1,15 @@
 package com.example.CarService.controller;
 
 import com.example.CarService.dto.request.VehicleRequest;
+import com.example.CarService.dto.response.PageResponse;
 import com.example.CarService.dto.response.VehicleResponse;
 import com.example.CarService.service.VehicleService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 
@@ -24,9 +25,17 @@ public class VehicleController {
         return ResponseEntity.status(201).body(vehicleService.createVehicle(request));
     }
 
+    // GET /vehicles?search=bmw&page=0&size=20&sort=licensePlate,asc  (all parameters optional)
     @GetMapping("/vehicles")
-    public ResponseEntity<List<VehicleResponse>> getAllVehicles(Pageable pageable){
-        return ResponseEntity.ok(vehicleService.getAllVehicles(pageable));
+    public ResponseEntity<PageResponse<VehicleResponse>> getAllVehicles(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable){
+        return ResponseEntity.ok(vehicleService.getAllVehicles(search, pageable));
+    }
+
+    @GetMapping("/vehicles/{id}")
+    public ResponseEntity<VehicleResponse> getVehicleById(@PathVariable Long id) {
+        return ResponseEntity.ok(vehicleService.getVehicleById(id));
     }
 
     @DeleteMapping("/vehicles/{id}")
