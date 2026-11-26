@@ -72,6 +72,29 @@ Validation errors (400) also list every invalid field:
 | 409 | Business rule violated (completing an order with work in progress, duplicate license plate) |
 | 500 | Unexpected error (details are only logged on the server) |
 
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/vehicles?search=&page=0&size=20&sort=id,asc` | Paged list of vehicles; `search` matches plate, owner, make or model (case-insensitive). Returns `{content, page, size, totalElements, totalPages}` |
+| GET | `/vehicles/{id}` | One vehicle |
+| POST | `/vehicles` | Create a vehicle |
+| DELETE | `/vehicles/{id}` | Delete a vehicle (soft delete) |
+| GET | `/vehicles/{vehicleId}/orders` | Orders of a vehicle, newest first |
+| POST | `/vehicles/{vehicleId}/orders` | Open a new order for a vehicle |
+| GET | `/orders?status=OPEN` | All orders, newest first; `status` (OPEN or COMPLETED) is optional |
+| GET | `/orders/{id}` | One order (includes `vehicleId` and `licensePlate`) |
+| PATCH | `/orders/{id}/complete` | Complete an order (see business rules) |
+| DELETE | `/orders/{id}` | Delete an order (soft delete) |
+| GET | `/orders/{orderId}/work-items` | Work items of an order |
+| POST | `/orders/{orderId}/work-items` | Add a work item |
+| PATCH | `/work-items/{id}/finish` | Mark a work item as DONE |
+| DELETE | `/work-items/{id}` | Delete a work item (soft delete) |
+| GET | `/orders/{orderId}/parts` | Parts of an order |
+| POST | `/orders/{orderId}/parts` | Add a part |
+| DELETE | `/parts/{id}` | Delete a part (soft delete) |
+| GET | `/reports/revenue-by-month` | Revenue (sum of parts of completed orders) per month, oldest first |
+
 ## Business Rules
 
 All violations return 409 Conflict.
