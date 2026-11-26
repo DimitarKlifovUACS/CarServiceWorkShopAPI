@@ -78,16 +78,18 @@ class SoftDeleteTests {
     }
 
     @Test
-    void deletedPartDoesNotCountInRevenue() throws Exception {
+    void deletedPartsAndOrdersDoNotCountInRevenue() throws Exception {
         long orderId = createOrder(createVehicle(uniquePlate()));
-        long partId = addPart(orderId, 2, 50.0); // 100.00
+        addPart(orderId, 2, 50.0);                    // 100.00, kept
+        long removedPartId = addPart(orderId, 1, 30.0); // 30.00, deleted before completion
+        mockMvc.perform(delete("/parts/" + removedPartId).header(KEY_HEADER, KEY)).andExpect(status().isNoContent());
+
+        double before = revenueThisMonth();
         mockMvc.perform(patch("/orders/" + orderId + "/complete").header(KEY_HEADER, KEY)).andExpect(status().isOk());
+        assertThat(revenueThisMonth() - before).isEqualTo(100.0); // only the part that was not deleted
 
-        double withPart = revenueThisMonth();
-        mockMvc.perform(delete("/parts/" + partId).header(KEY_HEADER, KEY)).andExpect(status().isNoContent());
-        double withoutPart = revenueThisMonth();
-
-        assertThat(withPart - withoutPart).isEqualTo(100.0);
+        mockMvc.perform(delete("/orders/" + orderId).header(KEY_HEADER, KEY)).andExpect(status().isNoContent());
+        assertThat(revenueThisMonth()).isEqualTo(before); // a deleted order no longer counts
     }
 
     @Test
