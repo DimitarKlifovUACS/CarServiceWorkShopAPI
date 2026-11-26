@@ -2,6 +2,12 @@
 
 A REST API for managing an auto-repair workshop. Vehicles arrive, mechanics open service orders, log work items and parts, and invoice the customer on completion.
 
+It was first built for the Computer Interface Programming course and then extended as the backend for **Workshop Desk**, an Angular frontend built for the Internet Programming course (PostgreSQL, Auth0 login, JSON errors, extra endpoints for the frontend and its workshop board).
+
+**Live:** https://workshop-desk-api.onrender.com/swagger-ui.html (free hosting: after ~15 minutes without traffic the first request takes up to ~2 minutes while the server wakes up).
+
+**Tech:** Java 17, Spring Boot 3, Spring Data JPA, Spring Security (OAuth2 resource server), PostgreSQL, springdoc-openapi (Swagger), Docker.
+
 ## How to run
 
 The API uses PostgreSQL. For local development, start the database with Docker (it runs on port 5433), then the API:
@@ -28,7 +34,20 @@ Demo data is inserted on the first start, only when the database is empty.
 | `ALLOWED_ORIGINS` | `http://localhost:4200` (comma-separated browser origins allowed by CORS) |
 | `PORT` | `8080` |
 
-Tests use an in-memory H2 database and need no running database or Auth0: `./mvnw test`
+## Tests
+
+```bash
+./mvnw test
+```
+
+Tests use an in-memory H2 database and need no running database or Auth0 (requests carry test tokens). They cover the error format, soft deletes, the completed-order lock, the read endpoints, work-item statuses and the security rules (`src/test/java`).
+
+## Deployment
+
+- **API:** [Render](https://render.com) web service, built from the `Dockerfile` on every push to `master`. Health check path: `/v3/api-docs`.
+- **Database:** [Neon](https://neon.tech) PostgreSQL (EU Central).
+- **Environment variables on Render:** `DB_URL`, `DB_USER`, `DB_PASSWORD`, and `ALLOWED_ORIGINS` (the frontend's URL). `PORT` is set by Render; the Auth0 values use the defaults above.
+- Tables are created/updated by Hibernate (`ddl-auto=update`); `src/main/resources/schema.sql` adds the partial unique index on license plates on every start.
 
 ## Authentication
 
@@ -53,7 +72,7 @@ All errors are returned as JSON in the standard "problem details" format (RFC 94
   "type": "about:blank",
   "title": "Conflict",
   "status": 409,
-  "detail": "Cannot complete order while work items are in progress",
+  "detail": "Cannot complete order while work items are not done",
   "instance": "/orders/4/complete"
 }
 ```
@@ -75,7 +94,7 @@ Validation errors (400) also list every invalid field:
 | 400 | Validation failed, malformed JSON, or a wrong parameter type (e.g. `/orders/abc`) |
 | 401 | Missing or invalid access token |
 | 404 | Record or URL not found |
-| 409 | Business rule violated (completing an order with work in progress, duplicate license plate) |
+| 409 | Business rule violated (completing an order with unfinished work, changing a completed order, duplicate license plate) |
 | 500 | Unexpected error (details are only logged on the server) |
 
 ## Endpoints
@@ -83,7 +102,7 @@ Validation errors (400) also list every invalid field:
 | Method | Path | Description |
 |---|---|---|
 | GET | `/vehicles?search=&page=0&size=20&sort=id,asc` | Paged list of vehicles; `search` matches plate, owner, make or model (case-insensitive). Returns `{content, page, size, totalElements, totalPages}` |
-| GET | `/vehicles/{id}` | One vehicle |
+| GET | `/vehicles/{id}` | One vehicle (`old` is true for vehicles built before 2020) |
 | POST | `/vehicles` | Create a vehicle |
 | DELETE | `/vehicles/{id}` | Delete a vehicle (soft delete) |
 | GET | `/vehicles/{vehicleId}/orders` | Orders of a vehicle, newest first |
@@ -115,39 +134,41 @@ Deleted records (soft delete: `deletedAt` is set) behave as if they do not exist
 
 ## Example curl commands
 
+A full flow against a local API (with the demo data loaded). IDs come from the responses, so adjust them if yours differ.
+
 ```bash
 # Put an access token in TOKEN first (see Authentication)
 TOKEN=<access token>
+API=http://localhost:8080
 
-# Create a vehicle
-curl -X POST http://localhost:8080/vehicles \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"licensePlate":"ABC-123","ownerName":"Dimitar Klifov","make":"BMW","model":"320i","year":2020}'
+# Create a vehicle -> note the "id" in the response
+curl -X POST $API/vehicles -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json"   -d '{"licensePlate":"XYZ-999","ownerName":"Ana Petrova","make":"Toyota","model":"Corolla","year":2018}'
 
-# Get all vehicles
-curl http://localhost:8080/vehicles \
-  -H "Authorization: Bearer $TOKEN"
+# Search vehicles (paged)
+curl "$API/vehicles?search=xyz&page=0&size=20" -H "Authorization: Bearer $TOKEN"
 
-# Create a service order for vehicle 1
-curl -X POST http://localhost:8080/vehicles/1/orders \
-  -H "Authorization: Bearer $TOKEN"
+# Open a service order for the new vehicle (here id 4) -> note the order "id"
+curl -X POST $API/vehicles/4/orders -H "Authorization: Bearer $TOKEN"
 
-# Add a work item to order 1
-curl -X POST http://localhost:8080/orders/1/work-items \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"description":"Replace brake pads","estimatedHours":1.5,"mechanicName":"Stefan"}'
+# Add a work item to the order (here id 5); it starts as TODO -> note its "id"
+curl -X POST $API/orders/5/work-items -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json"   -d '{"description":"Replace brake pads","estimatedHours":1.5,"mechanicName":"Stefan"}'
 
-# Finish work item 1
-curl -X PATCH http://localhost:8080/work-items/1/finish \
-  -H "Authorization: Bearer $TOKEN"
+# Add a part
+curl -X POST $API/orders/5/parts -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json"   -d '{"name":"Brake pads","quantity":2,"unitPrice":45}'
 
-# Complete order 1
-curl -X PATCH http://localhost:8080/orders/1/complete \
-  -H "Authorization: Bearer $TOKEN"
+# Completing now fails with 409: the work item is not DONE yet
+curl -X PATCH $API/orders/5/complete -H "Authorization: Bearer $TOKEN"
 
-# Get revenue by month report
-curl http://localhost:8080/reports/revenue-by-month \
-  -H "Authorization: Bearer $TOKEN"
+# Move the work item (here id 7) across the board: TODO -> IN_PROGRESS -> DONE
+curl -X PATCH $API/work-items/7/status -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"status":"IN_PROGRESS"}'
+curl -X PATCH $API/work-items/7/status -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"status":"DONE"}'
+
+# Now the order can be completed (after that it is locked)
+curl -X PATCH $API/orders/5/complete -H "Authorization: Bearer $TOKEN"
+
+# Workshop board: all work items of open orders
+curl "$API/work-items?orderStatus=OPEN" -H "Authorization: Bearer $TOKEN"
+
+# Revenue by month (sum of parts of completed orders)
+curl $API/reports/revenue-by-month -H "Authorization: Bearer $TOKEN"
 ```
