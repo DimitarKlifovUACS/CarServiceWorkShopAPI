@@ -72,9 +72,15 @@ Validation errors (400) also list every invalid field:
 | 409 | Business rule violated (completing an order with work in progress, duplicate license plate) |
 | 500 | Unexpected error (details are only logged on the server) |
 
-## Business Invariant
+## Business Rules
 
-A service order cannot be marked COMPLETED while any of its work items is still IN_PROGRESS. All work must be finished before closing. The system returns 409 Conflict if this rule is violated. This is enforced in the service layer inside a `@Transactional` method that checks all work items before allowing the status change.
+All violations return 409 Conflict.
+
+1. **Completion rule:** a service order cannot be marked COMPLETED while any of its (non-deleted) work items is still IN_PROGRESS. All work must be finished before closing. This is enforced in the service layer inside a `@Transactional` method that checks all work items before allowing the status change.
+2. **Completed orders are locked:** once an order is COMPLETED, its work items and parts can no longer be added, finished or deleted, and the order cannot be completed again. This keeps the invoice and the revenue report final. A completed order can still be read, and deleted as a whole.
+3. **Unique license plates:** two active vehicles cannot share a license plate. The plate of a deleted vehicle can be used again.
+
+Deleted records (soft delete: `deletedAt` is set) behave as if they do not exist: they return 404 and are not counted anywhere.
 
 ## Example curl commands
 
