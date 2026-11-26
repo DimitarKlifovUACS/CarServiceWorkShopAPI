@@ -36,6 +36,12 @@ public class WorkItemsController {
     }
 
 
+    // GET /work-items?orderStatus=OPEN  -> every card for the workshop board
+    @GetMapping("/work-items")
+    public ResponseEntity<List<WorkItemResponse>> getWorkItems(@RequestParam(required = false) String orderStatus) {
+        return ResponseEntity.ok(workItemService.getWorkItems(orderStatus));
+    }
+
     @GetMapping("/orders/{orderId}/work-items")
     public ResponseEntity<List<WorkItemResponse>> getWorkItemsForOrder(@PathVariable Long orderId) {
         return ResponseEntity.ok(workItemService.getWorkItemsForOrder(orderId));

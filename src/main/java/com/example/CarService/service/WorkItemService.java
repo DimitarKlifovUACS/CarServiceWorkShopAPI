@@ -5,6 +5,7 @@ import com.example.CarService.dto.response.WorkItemResponse;
 import com.example.CarService.entity.ServiceOrder;
 import com.example.CarService.entity.WorkItem;
 import com.example.CarService.entity.WorkItemStatus;
+import com.example.CarService.exception.BadRequestException;
 import com.example.CarService.exception.BusinessException;
 import com.example.CarService.exception.ResourceNotFoundException;
 import com.example.CarService.repository.ServiceOrderRepository;
@@ -69,6 +70,18 @@ public class WorkItemService {
         return toResponse(workItemRepository.save(workItem));
     }
 
+    // All active work items across orders (for the board); orderStatus (optional) is OPEN or COMPLETED
+    public List<WorkItemResponse> getWorkItems(String orderStatus) {
+        String normalized = null;
+        if (orderStatus != null && !orderStatus.isBlank()) {
+            normalized = orderStatus.trim().toUpperCase();
+            if (!ServiceOrder.STATUSES.contains(normalized)) {
+                throw new BadRequestException("Unknown order status '" + orderStatus + "'. Use OPEN or COMPLETED");
+            }
+        }
+        return workItemRepository.findActiveForBoard(normalized).stream().map(this::toResponse).toList();
+    }
+
     public List<WorkItemResponse> getWorkItemsForOrder(Long orderId) {
         // A deleted (or unknown) order has no visible work items: 404 instead of listing them
         serviceOrderRepository.findByIdAndDeletedAtIsNull(orderId)
@@ -97,6 +110,8 @@ public class WorkItemService {
         response.setEstimatedHours(workItem.getEstimatedHours());
         response.setMechanicName(workItem.getMechanicName());
         response.setStatus(workItem.getStatus());
+        response.setOrderId(workItem.getOrder().getId());
+        response.setLicensePlate(workItem.getOrder().getVehicle().getLicensePlate());
         return response;
     }
 }

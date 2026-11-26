@@ -9,6 +9,8 @@ public class WorkItemResponse {
     private double estimatedHours;
     private String mechanicName;
     private WorkItemStatus status;
+    private Long orderId;
+    private String licensePlate;
 
     public Long getId() {
         return id;
@@ -48,5 +50,21 @@ public class WorkItemResponse {
 
     public void setStatus(WorkItemStatus status) {
         this.status = status;
+    }
+
+    public Long getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(Long orderId) {
+        this.orderId = orderId;
+    }
+
+    public String getLicensePlate() {
+        return licensePlate;
+    }
+
+    public void setLicensePlate(String licensePlate) {
+        this.licensePlate = licensePlate;
     }
 }

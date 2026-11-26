@@ -14,12 +14,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class ServiceOrderService {
-
-    private static final Set<String> ORDER_STATUSES = Set.of("OPEN", "COMPLETED");
 
     private final ServiceOrderRepository serviceOrderRepository;
     private final VehicleRepository vehicleRepository;
@@ -55,7 +52,7 @@ public class ServiceOrderService {
             orders = serviceOrderRepository.findAllByDeletedAtIsNullAndVehicleDeletedAtIsNullOrderByCreatedAtDesc();
         } else {
             String normalized = status.trim().toUpperCase();
-            if (!ORDER_STATUSES.contains(normalized)) {
+            if (!ServiceOrder.STATUSES.contains(normalized)) {
                 throw new BadRequestException("Unknown order status '" + status + "'. Use OPEN or COMPLETED");
             }
             orders = serviceOrderRepository.findAllByStatusAndDeletedAtIsNullAndVehicleDeletedAtIsNullOrderByCreatedAtDesc(normalized);

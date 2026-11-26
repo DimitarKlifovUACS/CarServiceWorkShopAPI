@@ -5,9 +5,13 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 public class ServiceOrder {
+
+    // The statuses an order can have
+    public static final Set<String> STATUSES = Set.of("OPEN", "COMPLETED");
 
 
     @Id
