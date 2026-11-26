@@ -64,6 +64,9 @@ public class ServiceOrderService {
     public ServiceOrderResponse completeOrder(Long id){
         ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
+        if (order.isCompleted()) {
+            throw new BusinessException("Order is already completed");
+        }
 
         // Deleted work items no longer count: only active items can block completion
         boolean hasInProgress = order.getWorkItems()

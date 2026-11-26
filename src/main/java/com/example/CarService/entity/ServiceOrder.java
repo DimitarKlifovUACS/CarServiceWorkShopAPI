@@ -29,6 +29,11 @@ public class ServiceOrder {
     public ServiceOrder() {
     }
 
+    // A completed order is locked: its work items and parts can no longer change (the invoice is final)
+    public boolean isCompleted() {
+        return "COMPLETED".equals(status);
+    }
+
     public ServiceOrder(String status, LocalDateTime createdAt, LocalDateTime completedAt, LocalDateTime deletedAt, Vehicle vehicle) {
         this.status = status;
         this.createdAt = createdAt;

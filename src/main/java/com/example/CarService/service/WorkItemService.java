@@ -5,6 +5,7 @@ import com.example.CarService.dto.response.ServiceOrderResponse;
 import com.example.CarService.dto.response.WorkItemResponse;
 import com.example.CarService.entity.ServiceOrder;
 import com.example.CarService.entity.WorkItem;
+import com.example.CarService.exception.BusinessException;
 import com.example.CarService.exception.ResourceNotFoundException;
 import com.example.CarService.repository.ServiceOrderRepository;
 import com.example.CarService.repository.WorkItemRepository;
@@ -29,6 +30,9 @@ public class WorkItemService {
     public WorkItemResponse addWorkItem(Long orderId, WorkItemRequest request){
         ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(orderId)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
+        if (order.isCompleted()) {
+            throw new BusinessException("Cannot add work items to a completed order");
+        }
 
         WorkItem workItem = new WorkItem();
         workItem.setOrder(order);
@@ -54,6 +58,9 @@ public class WorkItemService {
     public WorkItemResponse finishWorkItem(Long id){
         WorkItem workItem = workItemRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()->new ResourceNotFoundException("Work item not found"));
+        if (workItem.getOrder().isCompleted()) {
+            throw new BusinessException("Cannot change work items of a completed order");
+        }
 
         workItem.setStatus("DONE");
 
@@ -93,6 +100,9 @@ public class WorkItemService {
     public void deleteWorkItem(Long id) {
         WorkItem workItem = workItemRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Work item not found"));
+        if (workItem.getOrder().isCompleted()) {
+            throw new BusinessException("Cannot delete work items of a completed order");
+        }
 
         workItem.setDeletedAt(LocalDateTime.now());
         workItemRepository.save(workItem);
