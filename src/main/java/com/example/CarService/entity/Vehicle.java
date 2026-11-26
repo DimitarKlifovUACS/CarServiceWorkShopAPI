@@ -13,7 +13,7 @@ public class Vehicle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
+    // Unique only among vehicles that are not deleted: enforced by a partial index in schema.sql
     private String licensePlate;
 
     @Column(nullable = false)

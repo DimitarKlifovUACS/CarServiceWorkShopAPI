@@ -11,5 +11,5 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     // Like findById, but ignores soft-deleted records (deletedAt is set)
     Optional<Vehicle> findByIdAndDeletedAtIsNull(Long id);
     Page<Vehicle> findAllByDeletedAtIsNull(Pageable pageable);
-    boolean existsByLicensePlate(String licensePlate);
+    boolean existsByLicensePlateAndDeletedAtIsNull(String licensePlate);
 }

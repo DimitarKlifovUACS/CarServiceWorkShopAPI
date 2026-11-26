@@ -23,8 +23,8 @@ public class VehicleService {
     }
 
     public VehicleResponse createVehicle(VehicleRequest vehicleRequest){
-        // License plates are unique in the database; check first so the client gets a clear 409 instead of a 500
-        if (vehicleRepository.existsByLicensePlate(vehicleRequest.getLicensePlate())) {
+        // Plates are unique among active (not deleted) vehicles; check first so the client gets a clear 409 instead of a 500
+        if (vehicleRepository.existsByLicensePlateAndDeletedAtIsNull(vehicleRequest.getLicensePlate())) {
             throw new BusinessException("A vehicle with license plate " + vehicleRequest.getLicensePlate() + " already exists");
         }
 
