@@ -21,6 +21,12 @@ public class ServiceOrderController {
 
     }
 
+    // GET /orders or /orders?status=OPEN (or COMPLETED)
+    @GetMapping("/orders")
+    public ResponseEntity<List<ServiceOrderResponse>> getOrders(@RequestParam(required = false) String status) {
+        return ResponseEntity.ok(serviceOrderService.getOrders(status));
+    }
+
     @GetMapping("/orders/{id}")
     public ResponseEntity<ServiceOrderResponse>getOrderById(@PathVariable Long id){
         return ResponseEntity.ok(serviceOrderService.getOrderById(id));

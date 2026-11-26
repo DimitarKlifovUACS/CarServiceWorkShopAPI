@@ -7,6 +7,8 @@ public class ServiceOrderResponse {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime completedAt;
+    private Long vehicleId;
+    private String licensePlate;
 
     public Long getId() {
         return id;
@@ -38,5 +40,21 @@ public class ServiceOrderResponse {
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Long getVehicleId() {
+        return vehicleId;
+    }
+
+    public void setVehicleId(Long vehicleId) {
+        this.vehicleId = vehicleId;
+    }
+
+    public String getLicensePlate() {
+        return licensePlate;
+    }
+
+    public void setLicensePlate(String licensePlate) {
+        this.licensePlate = licensePlate;
     }
 }

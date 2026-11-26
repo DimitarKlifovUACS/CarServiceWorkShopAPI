@@ -1,9 +1,9 @@
 package com.example.CarService.service;
 
 import com.example.CarService.dto.response.ServiceOrderResponse;
-import com.example.CarService.dto.response.VehicleResponse;
 import com.example.CarService.entity.ServiceOrder;
 import com.example.CarService.entity.Vehicle;
+import com.example.CarService.exception.BadRequestException;
 import com.example.CarService.exception.BusinessException;
 import com.example.CarService.exception.ResourceNotFoundException;
 import com.example.CarService.repository.ServiceOrderRepository;
@@ -12,11 +12,13 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ServiceOrderService {
+
+    private static final Set<String> ORDER_STATUSES = Set.of("OPEN", "COMPLETED");
 
     private final ServiceOrderRepository serviceOrderRepository;
     private final VehicleRepository vehicleRepository;
@@ -35,29 +37,29 @@ public class ServiceOrderService {
         order.setStatus("OPEN");
         order.setCreatedAt(LocalDateTime.now());
 
-        ServiceOrder saved = serviceOrderRepository.save(order);
-
-        ServiceOrderResponse response = new ServiceOrderResponse();
-        response.setId(saved.getId());
-        response.setStatus(saved.getStatus());
-        response.setCreatedAt(saved.getCreatedAt());
-        response.setCompletedAt(saved.getCompletedAt());
-
-        return response;
+        return toResponse(serviceOrderRepository.save(order));
     }
 
 
     public ServiceOrderResponse getOrderById(Long id){
         ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
+        return toResponse(order);
+    }
 
-        ServiceOrderResponse response = new ServiceOrderResponse();
-        response.setId(order.getId());
-        response.setStatus(order.getStatus());
-        response.setCreatedAt(order.getCreatedAt());
-        response.setCompletedAt(order.getCompletedAt());
-
-        return response;
+    // All active orders of active vehicles, newest first; status (optional) is OPEN or COMPLETED
+    public List<ServiceOrderResponse> getOrders(String status) {
+        List<ServiceOrder> orders;
+        if (status == null || status.isBlank()) {
+            orders = serviceOrderRepository.findAllByDeletedAtIsNullAndVehicleDeletedAtIsNullOrderByCreatedAtDesc();
+        } else {
+            String normalized = status.trim().toUpperCase();
+            if (!ORDER_STATUSES.contains(normalized)) {
+                throw new BadRequestException("Unknown order status '" + status + "'. Use OPEN or COMPLETED");
+            }
+            orders = serviceOrderRepository.findAllByStatusAndDeletedAtIsNullAndVehicleDeletedAtIsNullOrderByCreatedAtDesc(normalized);
+        }
+        return orders.stream().map(this::toResponse).toList();
     }
 
     @Transactional
@@ -81,16 +83,7 @@ public class ServiceOrderService {
         order.setStatus("COMPLETED");
         order.setCompletedAt(LocalDateTime.now());
 
-        ServiceOrder saved = serviceOrderRepository.save(order);
-
-        ServiceOrderResponse response = new ServiceOrderResponse();
-        response.setId(saved.getId());
-        response.setStatus(saved.getStatus());
-        response.setCreatedAt(saved.getCreatedAt());
-        response.setCompletedAt(saved.getCompletedAt());
-
-        return response;
-
+        return toResponse(serviceOrderRepository.save(order));
     }
 
     public List<ServiceOrderResponse> getOrdersByVehicle(Long vehicleId) {
@@ -98,20 +91,8 @@ public class ServiceOrderService {
         vehicleRepository.findByIdAndDeletedAtIsNull(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
 
-        List<ServiceOrder> orders = serviceOrderRepository.findAllByVehicleIdAndDeletedAtIsNull(vehicleId);
-        List<ServiceOrderResponse> responses = new ArrayList<>();
-
-        for (ServiceOrder order : orders) {
-            ServiceOrderResponse response = new ServiceOrderResponse();
-            response.setId(order.getId());
-            response.setStatus(order.getStatus());
-            response.setCompletedAt(order.getCompletedAt());
-            response.setCreatedAt(order.getCreatedAt());
-
-            responses.add(response);
-        }
-
-        return responses;
+        return serviceOrderRepository.findAllByVehicleIdAndDeletedAtIsNullOrderByCreatedAtDesc(vehicleId)
+                .stream().map(this::toResponse).toList();
     }
 
     public void deleteOrder(Long id) {
@@ -120,5 +101,17 @@ public class ServiceOrderService {
 
         order.setDeletedAt(LocalDateTime.now());
         serviceOrderRepository.save(order);
+    }
+
+    // One place that builds the response, so every endpoint returns the same fields
+    private ServiceOrderResponse toResponse(ServiceOrder order) {
+        ServiceOrderResponse response = new ServiceOrderResponse();
+        response.setId(order.getId());
+        response.setStatus(order.getStatus());
+        response.setCreatedAt(order.getCreatedAt());
+        response.setCompletedAt(order.getCompletedAt());
+        response.setVehicleId(order.getVehicle().getId());
+        response.setLicensePlate(order.getVehicle().getLicensePlate());
+        return response;
     }
 }
