@@ -38,6 +38,40 @@ X-API-Key: local-dev-key
 
 Missing or invalid key returns 401 Unauthorized.
 
+## Errors
+
+All errors are returned as JSON in the standard "problem details" format (RFC 9457), content type `application/problem+json`:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "Cannot complete order while work items are in progress",
+  "instance": "/orders/4/complete"
+}
+```
+
+Validation errors (400) also list every invalid field:
+
+```json
+{
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Validation failed",
+  "instance": "/vehicles",
+  "fieldErrors": { "licensePlate": "must not be blank", "year": "must be greater than or equal to 1886" }
+}
+```
+
+| Status | When |
+|---|---|
+| 400 | Validation failed, malformed JSON, or a wrong parameter type (e.g. `/orders/abc`) |
+| 401 | Missing or invalid API key |
+| 404 | Record or URL not found |
+| 409 | Business rule violated (completing an order with work in progress, duplicate license plate) |
+| 500 | Unexpected error (details are only logged on the server) |
+
 ## Business Invariant
 
 A service order cannot be marked COMPLETED while any of its work items is still IN_PROGRESS. All work must be finished before closing. The system returns 409 Conflict if this rule is violated. This is enforced in the service layer inside a `@Transactional` method that checks all work items before allowing the status change.
