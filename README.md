@@ -23,20 +23,26 @@ Demo data is inserted on the first start, only when the database is empty.
 |---|---|
 | `DB_URL` | `jdbc:postgresql://localhost:5433/carservice` |
 | `DB_USER` / `DB_PASSWORD` | `carservice` / `carservice` |
-| `API_KEY` | `local-dev-key` |
+| `AUTH0_ISSUER` | `https://dev-8cqhzs6kt6ocflxl.us.auth0.com/` (must end with `/`) |
+| `AUTH0_AUDIENCE` | `https://workshop-desk-api` |
+| `ALLOWED_ORIGINS` | `http://localhost:4200` (comma-separated browser origins allowed by CORS) |
 | `PORT` | `8080` |
 
-Tests use an in-memory H2 database and need no running database: `./mvnw test`
+Tests use an in-memory H2 database and need no running database or Auth0: `./mvnw test`
 
-## API Key
+## Authentication
 
-All requests must include the `X-API-Key` header with the value of `API_KEY` (locally `local-dev-key`):
+Users sign in with Google through Auth0 (OpenID Connect). The frontend receives an **access token** (a signed JWT) and sends it with every request:
 
 ```
-X-API-Key: local-dev-key
+Authorization: Bearer <access token>
 ```
 
-Missing or invalid key returns 401 Unauthorized.
+The API is an OAuth2 **resource server**: for every request it checks the token's signature (with Auth0's public keys), issuer, audience (`https://workshop-desk-api`) and expiry. A missing or invalid token returns **401** (as JSON, like all errors). Swagger UI and `/v3/api-docs` are public; in Swagger, click **Authorize** and paste a token to try the endpoints.
+
+To get a token for testing without the frontend: Auth0 dashboard → Applications → APIs → Workshop Desk API → **Test** tab.
+
+Browsers can only call the API from the origins in `ALLOWED_ORIGINS` (CORS).
 
 ## Errors
 
@@ -67,7 +73,7 @@ Validation errors (400) also list every invalid field:
 | Status | When |
 |---|---|
 | 400 | Validation failed, malformed JSON, or a wrong parameter type (e.g. `/orders/abc`) |
-| 401 | Missing or invalid API key |
+| 401 | Missing or invalid access token |
 | 404 | Record or URL not found |
 | 409 | Business rule violated (completing an order with work in progress, duplicate license plate) |
 | 500 | Unexpected error (details are only logged on the server) |
@@ -110,35 +116,38 @@ Deleted records (soft delete: `deletedAt` is set) behave as if they do not exist
 ## Example curl commands
 
 ```bash
+# Put an access token in TOKEN first (see Authentication)
+TOKEN=<access token>
+
 # Create a vehicle
 curl -X POST http://localhost:8080/vehicles \
-  -H "X-API-Key: local-dev-key" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"licensePlate":"ABC-123","ownerName":"Dimitar Klifov","make":"BMW","model":"320i","year":2020}'
 
 # Get all vehicles
 curl http://localhost:8080/vehicles \
-  -H "X-API-Key: local-dev-key"
+  -H "Authorization: Bearer $TOKEN"
 
 # Create a service order for vehicle 1
 curl -X POST http://localhost:8080/vehicles/1/orders \
-  -H "X-API-Key: local-dev-key"
+  -H "Authorization: Bearer $TOKEN"
 
 # Add a work item to order 1
 curl -X POST http://localhost:8080/orders/1/work-items \
-  -H "X-API-Key: local-dev-key" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"description":"Replace brake pads","estimatedHours":1.5,"mechanicName":"Stefan"}'
 
 # Finish work item 1
 curl -X PATCH http://localhost:8080/work-items/1/finish \
-  -H "X-API-Key: local-dev-key"
+  -H "Authorization: Bearer $TOKEN"
 
 # Complete order 1
 curl -X PATCH http://localhost:8080/orders/1/complete \
-  -H "X-API-Key: local-dev-key"
+  -H "Authorization: Bearer $TOKEN"
 
 # Get revenue by month report
 curl http://localhost:8080/reports/revenue-by-month \
-  -H "X-API-Key: local-dev-key"
+  -H "Authorization: Bearer $TOKEN"
 ```
