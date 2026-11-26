@@ -71,7 +71,7 @@ import java.time.LocalDateTime;
             wi1.setDescription("Replace front brake pads");
             wi1.setEstimatedHours(1.5);
             wi1.setMechanicName("Stefan");
-            wi1.setStatus("DONE");
+            wi1.setStatus(WorkItemStatus.DONE);
             workItemRepository.save(wi1);
 
             WorkItem wi2 = new WorkItem();
@@ -79,7 +79,7 @@ import java.time.LocalDateTime;
             wi2.setDescription("Oil change");
             wi2.setEstimatedHours(0.5);
             wi2.setMechanicName("Stefan");
-            wi2.setStatus("DONE");
+            wi2.setStatus(WorkItemStatus.DONE);
             workItemRepository.save(wi2);
 
             Part p1 = new Part();
@@ -109,7 +109,7 @@ import java.time.LocalDateTime;
             wi3.setDescription("Replace air filter");
             wi3.setEstimatedHours(0.5);
             wi3.setMechanicName("Bogdan");
-            wi3.setStatus("DONE");
+            wi3.setStatus(WorkItemStatus.DONE);
             workItemRepository.save(wi3);
 
             WorkItem wi4 = new WorkItem();
@@ -117,7 +117,7 @@ import java.time.LocalDateTime;
             wi4.setDescription("Wheel alignment");
             wi4.setEstimatedHours(1.0);
             wi4.setMechanicName("Bogdan");
-            wi4.setStatus("DONE");
+            wi4.setStatus(WorkItemStatus.DONE);
             workItemRepository.save(wi4);
 
             Part p3 = new Part();
@@ -147,7 +147,7 @@ import java.time.LocalDateTime;
             wi5.setDescription("Replace spark plugs");
             wi5.setEstimatedHours(2.0);
             wi5.setMechanicName("Stefan");
-            wi5.setStatus("DONE");
+            wi5.setStatus(WorkItemStatus.DONE);
             workItemRepository.save(wi5);
 
             Part p5 = new Part();
@@ -169,7 +169,7 @@ import java.time.LocalDateTime;
             wi6.setDescription("Replace timing belt");
             wi6.setEstimatedHours(3.0);
             wi6.setMechanicName("Bogdan");
-            wi6.setStatus("IN_PROGRESS");
+            wi6.setStatus(WorkItemStatus.IN_PROGRESS);
             workItemRepository.save(wi6);
 
         }

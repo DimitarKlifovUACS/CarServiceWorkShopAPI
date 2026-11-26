@@ -14,7 +14,8 @@ public class WorkItem {
     private String description;
     private double estimatedHours;
     private String mechanicName;
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private WorkItemStatus status;
     private LocalDateTime deletedAt;
 
     @ManyToOne
@@ -25,7 +26,7 @@ public class WorkItem {
     public WorkItem() {
     }
 
-    public WorkItem(String description, double estimatedHours, String mechanicName, String status, LocalDateTime deletedAt, ServiceOrder order) {
+    public WorkItem(String description, double estimatedHours, String mechanicName, WorkItemStatus status, LocalDateTime deletedAt, ServiceOrder order) {
         this.description = description;
         this.estimatedHours = estimatedHours;
         this.mechanicName = mechanicName;
@@ -66,11 +67,11 @@ public class WorkItem {
         this.mechanicName = mechanicName;
     }
 
-    public String getStatus() {
+    public WorkItemStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(WorkItemStatus status) {
         this.status = status;
     }
 

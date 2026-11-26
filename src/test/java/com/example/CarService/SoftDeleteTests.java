@@ -65,7 +65,7 @@ class SoftDeleteTests {
     @Test
     void deletedWorkItemDoesNotBlockCompletion() throws Exception {
         long orderId = createOrder(createVehicle(uniquePlate()));
-        long workItemId = createWorkItem(orderId); // new work items start IN_PROGRESS
+        long workItemId = createWorkItem(orderId); // new work items start as TODO, which blocks completion
 
         mockMvc.perform(patch("/orders/" + orderId + "/complete").header(KEY_HEADER, KEY)).andExpect(status().isConflict());
 

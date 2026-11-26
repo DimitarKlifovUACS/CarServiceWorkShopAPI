@@ -58,7 +58,7 @@ class ErrorResponseTests {
         mockMvc.perform(patch("/orders/4/complete").header(KEY_HEADER, KEY))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.detail").value("Cannot complete order while work items are in progress"));
+                .andExpect(jsonPath("$.detail").value("Cannot complete order while work items are not done"));
     }
 
     @Test

@@ -1,10 +1,10 @@
 package com.example.CarService.service;
 
 import com.example.CarService.dto.request.WorkItemRequest;
-import com.example.CarService.dto.response.ServiceOrderResponse;
 import com.example.CarService.dto.response.WorkItemResponse;
 import com.example.CarService.entity.ServiceOrder;
 import com.example.CarService.entity.WorkItem;
+import com.example.CarService.entity.WorkItemStatus;
 import com.example.CarService.exception.BusinessException;
 import com.example.CarService.exception.ResourceNotFoundException;
 import com.example.CarService.repository.ServiceOrderRepository;
@@ -12,7 +12,6 @@ import com.example.CarService.repository.WorkItemRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -36,23 +35,13 @@ public class WorkItemService {
 
         WorkItem workItem = new WorkItem();
         workItem.setOrder(order);
-        workItem.setStatus("IN_PROGRESS");
+        workItem.setStatus(WorkItemStatus.TODO); // new work starts in the "To do" column of the board
 
         workItem.setDescription(request.getDescription());
         workItem.setEstimatedHours(request.getEstimatedHours());
         workItem.setMechanicName(request.getMechanicName());
 
-        WorkItem saved = workItemRepository.save(workItem);
-
-        WorkItemResponse response = new WorkItemResponse();
-        response.setId(saved.getId());
-        response.setDescription(saved.getDescription());
-        response.setEstimatedHours(saved.getEstimatedHours());
-        response.setMechanicName(saved.getMechanicName());
-        response.setStatus(saved.getStatus());
-
-        return response;
-
+        return toResponse(workItemRepository.save(workItem));
     }
 
     public WorkItemResponse finishWorkItem(Long id){
@@ -62,39 +51,18 @@ public class WorkItemService {
             throw new BusinessException("Cannot change work items of a completed order");
         }
 
-        workItem.setStatus("DONE");
+        workItem.setStatus(WorkItemStatus.DONE);
 
-        WorkItem saved = workItemRepository.save(workItem);
-
-        WorkItemResponse response = new WorkItemResponse();
-        response.setId(saved.getId());
-        response.setDescription(saved.getDescription());
-        response.setEstimatedHours(saved.getEstimatedHours());
-        response.setMechanicName(saved.getMechanicName());
-        response.setStatus(saved.getStatus());
-
-        return response;
+        return toResponse(workItemRepository.save(workItem));
     }
 
     public List<WorkItemResponse> getWorkItemsForOrder(Long orderId) {
         // A deleted (or unknown) order has no visible work items: 404 instead of listing them
         serviceOrderRepository.findByIdAndDeletedAtIsNull(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-        List<WorkItem> workItems = workItemRepository.findAllByOrderIdAndDeletedAtIsNull(orderId);
-        List<WorkItemResponse> responses = new ArrayList<>();
 
-        for (WorkItem workItem : workItems) {
-            WorkItemResponse response = new WorkItemResponse();
-            response.setId(workItem.getId());
-            response.setEstimatedHours(workItem.getEstimatedHours());
-            response.setStatus(workItem.getStatus());
-            response.setMechanicName(workItem.getMechanicName());
-            response.setDescription(workItem.getDescription());
-
-            responses.add(response);
-        }
-
-        return responses;
+        return workItemRepository.findAllByOrderIdAndDeletedAtIsNull(orderId)
+                .stream().map(this::toResponse).toList();
     }
 
     public void deleteWorkItem(Long id) {
@@ -106,5 +74,16 @@ public class WorkItemService {
 
         workItem.setDeletedAt(LocalDateTime.now());
         workItemRepository.save(workItem);
+    }
+
+    // One place that builds the response, so every endpoint returns the same fields
+    private WorkItemResponse toResponse(WorkItem workItem) {
+        WorkItemResponse response = new WorkItemResponse();
+        response.setId(workItem.getId());
+        response.setDescription(workItem.getDescription());
+        response.setEstimatedHours(workItem.getEstimatedHours());
+        response.setMechanicName(workItem.getMechanicName());
+        response.setStatus(workItem.getStatus());
+        return response;
     }
 }

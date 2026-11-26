@@ -1,12 +1,14 @@
 package com.example.CarService.dto.response;
 
+import com.example.CarService.entity.WorkItemStatus;
+
 public class WorkItemResponse {
 
     private Long id;
     private String description;
     private double estimatedHours;
     private String mechanicName;
-    private String status;
+    private WorkItemStatus status;
 
     public Long getId() {
         return id;
@@ -40,11 +42,11 @@ public class WorkItemResponse {
         this.mechanicName = mechanicName;
     }
 
-    public String getStatus() {
+    public WorkItemStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(WorkItemStatus status) {
         this.status = status;
     }
 }

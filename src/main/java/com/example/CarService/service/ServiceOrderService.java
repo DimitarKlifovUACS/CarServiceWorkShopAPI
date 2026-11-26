@@ -3,6 +3,7 @@ package com.example.CarService.service;
 import com.example.CarService.dto.response.ServiceOrderResponse;
 import com.example.CarService.entity.ServiceOrder;
 import com.example.CarService.entity.Vehicle;
+import com.example.CarService.entity.WorkItemStatus;
 import com.example.CarService.exception.BadRequestException;
 import com.example.CarService.exception.BusinessException;
 import com.example.CarService.exception.ResourceNotFoundException;
@@ -70,14 +71,14 @@ public class ServiceOrderService {
             throw new BusinessException("Order is already completed");
         }
 
-        // Deleted work items no longer count: only active items can block completion
-        boolean hasInProgress = order.getWorkItems()
+        // Every active work item must be DONE (TODO and IN_PROGRESS both block). Deleted items no longer count.
+        boolean hasUnfinishedWork = order.getWorkItems()
                 .stream()
                 .filter(item -> item.getDeletedAt() == null)
-                .anyMatch(item -> "IN_PROGRESS".equals(item.getStatus()));
+                .anyMatch(item -> item.getStatus() != WorkItemStatus.DONE);
 
-        if (hasInProgress){
-            throw new BusinessException("Cannot complete order while work items are in progress");
+        if (hasUnfinishedWork){
+            throw new BusinessException("Cannot complete order while work items are not done");
         }
 
         order.setStatus("COMPLETED");
