@@ -1,6 +1,7 @@
 package com.example.CarService.controller;
 
 import com.example.CarService.dto.request.WorkItemRequest;
+import com.example.CarService.dto.request.WorkItemStatusRequest;
 import com.example.CarService.dto.response.WorkItemResponse;
 import com.example.CarService.service.WorkItemService;
 import jakarta.validation.Valid;
@@ -26,6 +27,12 @@ public class WorkItemsController {
     @PatchMapping("/work-items/{id}/finish")
     public ResponseEntity<WorkItemResponse> finishWorkItem(@PathVariable Long id){
         return ResponseEntity.ok(workItemService.finishWorkItem(id));
+    }
+
+    // Body: {"status": "TODO" | "IN_PROGRESS" | "DONE"}
+    @PatchMapping("/work-items/{id}/status")
+    public ResponseEntity<WorkItemResponse> changeStatus(@PathVariable Long id, @Valid @RequestBody WorkItemStatusRequest request) {
+        return ResponseEntity.ok(workItemService.changeStatus(id, request.getStatus()));
     }
 
 

@@ -56,6 +56,19 @@ public class WorkItemService {
         return toResponse(workItemRepository.save(workItem));
     }
 
+    // Used by the board: move a card to any column (TODO, IN_PROGRESS or DONE), in any direction
+    public WorkItemResponse changeStatus(Long id, WorkItemStatus status) {
+        WorkItem workItem = workItemRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Work item not found"));
+        if (workItem.getOrder().isCompleted()) {
+            throw new BusinessException("Cannot change work items of a completed order");
+        }
+
+        workItem.setStatus(status);
+
+        return toResponse(workItemRepository.save(workItem));
+    }
+
     public List<WorkItemResponse> getWorkItemsForOrder(Long orderId) {
         // A deleted (or unknown) order has no visible work items: 404 instead of listing them
         serviceOrderRepository.findByIdAndDeletedAtIsNull(orderId)
