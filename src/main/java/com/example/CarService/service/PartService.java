@@ -11,6 +11,7 @@ import com.example.CarService.repository.ServiceOrderRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class PartService {
@@ -36,17 +37,16 @@ public class PartService {
         part.setQuantity(request.getQuantity());
         part.setOrder(order);
 
-        Part saved = partRepository.save(part);
+        return toResponse(partRepository.save(part));
+    }
 
-        PartResponse response = new PartResponse();
-        response.setId(saved.getId());
-        response.setName(saved.getName());
-        response.setQuantity(saved.getQuantity());
-        response.setUnitPrice(saved.getUnitPrice());
+    public List<PartResponse> getPartsForOrder(Long orderId) {
+        // A deleted (or unknown) order has no visible parts: 404 instead of listing them
+        serviceOrderRepository.findByIdAndDeletedAtIsNull(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        return response;
-
-
+        return partRepository.findAllByOrderIdAndDeletedAtIsNullOrderByIdAsc(orderId)
+                .stream().map(this::toResponse).toList();
     }
 
     public void deletePart(Long id) {
@@ -58,5 +58,14 @@ public class PartService {
 
         part.setDeletedAt(LocalDateTime.now());
         partRepository.save(part);
+    }
+
+    private PartResponse toResponse(Part part) {
+        PartResponse response = new PartResponse();
+        response.setId(part.getId());
+        response.setName(part.getName());
+        response.setQuantity(part.getQuantity());
+        response.setUnitPrice(part.getUnitPrice());
+        return response;
     }
 }

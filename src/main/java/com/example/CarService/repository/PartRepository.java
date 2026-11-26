@@ -11,4 +11,5 @@ public interface PartRepository extends JpaRepository<Part, Long> {
     // Like findById, but ignores soft-deleted records (deletedAt is set)
     Optional<Part> findByIdAndDeletedAtIsNull(Long id);
     List<Part> findAllByDeletedAtIsNull();
+    List<Part> findAllByOrderIdAndDeletedAtIsNullOrderByIdAsc(Long orderId);
 }

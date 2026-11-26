@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class PartController {
     private final PartService partService;
@@ -19,6 +21,11 @@ public class PartController {
     public ResponseEntity<PartResponse> addPart(@PathVariable Long orderId, @Valid @RequestBody PartRequest request){
         return ResponseEntity.status(201).body(partService.addPart(orderId,request));
 
+    }
+
+    @GetMapping("/orders/{orderId}/parts")
+    public ResponseEntity<List<PartResponse>> getPartsForOrder(@PathVariable Long orderId) {
+        return ResponseEntity.ok(partService.getPartsForOrder(orderId));
     }
 
     @DeleteMapping("/parts/{id}")
