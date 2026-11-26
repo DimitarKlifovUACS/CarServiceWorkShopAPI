@@ -65,8 +65,10 @@ public class ServiceOrderService {
         ServiceOrder order = serviceOrderRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
 
+        // Deleted work items no longer count: only active items can block completion
         boolean hasInProgress = order.getWorkItems()
                 .stream()
+                .filter(item -> item.getDeletedAt() == null)
                 .anyMatch(item -> "IN_PROGRESS".equals(item.getStatus()));
 
         if (hasInProgress){
