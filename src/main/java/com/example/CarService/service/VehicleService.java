@@ -3,6 +3,7 @@ package com.example.CarService.service;
 import com.example.CarService.dto.request.VehicleRequest;
 import com.example.CarService.dto.response.VehicleResponse;
 import com.example.CarService.entity.Vehicle;
+import com.example.CarService.exception.BusinessException;
 import com.example.CarService.exception.ResourceNotFoundException;
 import com.example.CarService.repository.VehicleRepository;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,11 @@ public class VehicleService {
     }
 
     public VehicleResponse createVehicle(VehicleRequest vehicleRequest){
+        // License plates are unique in the database; check first so the client gets a clear 409 instead of a 500
+        if (vehicleRepository.existsByLicensePlate(vehicleRequest.getLicensePlate())) {
+            throw new BusinessException("A vehicle with license plate " + vehicleRequest.getLicensePlate() + " already exists");
+        }
+
         Vehicle vehicle = new Vehicle();
         vehicle.setLicensePlate(vehicleRequest.getLicensePlate());
         vehicle.setOwnerName(vehicleRequest.getOwnerName());

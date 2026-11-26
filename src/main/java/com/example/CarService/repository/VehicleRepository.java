@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     Page<Vehicle> findAllByDeletedAtIsNull(Pageable pageable);
+    boolean existsByLicensePlate(String licensePlate);
 }
